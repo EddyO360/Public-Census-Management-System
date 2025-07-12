@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/Public-Census-Management-System/static/css/main.0864176d.css",
+    "main.js": "/Public-Census-Management-System/static/js/main.d4a198fe.js",
+    "index.html": "/Public-Census-Management-System/index.html",
+    "main.0864176d.css.map": "/Public-Census-Management-System/static/css/main.0864176d.css.map",
+    "main.d4a198fe.js.map": "/Public-Census-Management-System/static/js/main.d4a198fe.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0864176d.css",
+    "static/js/main.d4a198fe.js"
+  ]
+}
