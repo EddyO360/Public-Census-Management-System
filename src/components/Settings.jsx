@@ -159,7 +159,7 @@ function Settings() {
                 <ListItem>
                                      <ListItemText 
                      primary="App Name"
-                     secondary="Public Census Management System"
+                     secondary="Public Census App"
                    />
                 </ListItem>
                 <ListItem>

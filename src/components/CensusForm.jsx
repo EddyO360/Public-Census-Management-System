@@ -343,7 +343,7 @@ function CensusForm({ onToggleTheme, mode }) {
           Census Data Collection Form
         </Typography>
         <Typography variant="subtitle1" color="text.secondary" gutterBottom align="center">
-          Public Census Management System
+          Public Census App
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>

@@ -137,7 +137,7 @@ function Login({ onToggleTheme, mode }) {
           Welcome Back
         </Typography>
         <Typography variant="body1" color="text.secondary" gutterBottom>
-          Public Census Management System
+          Public Census App
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
           Sign in to access your dashboard

@@ -250,6 +250,8 @@ function AppContent() {
 }
 
 function App() {
+  console.log('App component loaded');
+  
   return (
     <ErrorBoundary>
       <AuthProvider>

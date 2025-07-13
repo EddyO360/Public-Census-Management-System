@@ -967,12 +967,6 @@ export const wards = {
   'Kitutu Masaba': [
     'Gachuba', 'Magombo', 'Gesima', 'Manga', 'Nyamache'
   ],
-  'Nyaribari Masaba': [
-    'Gesusu', 'Gachuba', 'Ichuni', 'Manga', 'Bosoti'
-  ],
-  'Nyaribari Chache': [
-    'Nyaribari Masaba', 'Gesusu', 'Masimba', 'Gianchore', 'Birongo'
-  ],
   'Dagoretti North': [
     'Kilimani', 'Kawangware', 'Gatina', 'Kileleshwa', 'Kabiro', 'Mutu-ini'
   ],

@@ -4,9 +4,19 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/Public-Census-Management-System/',
+  base: '/',
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'location-data': ['./src/data/kenyaLocations.jsx'],
+          'vendor': ['react', 'react-dom'],
+          'ui': ['@mui/material', '@mui/icons-material']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
   },
   server: {
     port: 3000,

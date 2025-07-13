@@ -1,6 +1,6 @@
 # Public Census Management System
 
-A comprehensive web application for managing census data collection in Kenya, built with React, Firebase, and Material-UI.
+A comprehensive web application for managing census data collection, built with React, Firebase, and Material-UI.
 
 ## Features
 

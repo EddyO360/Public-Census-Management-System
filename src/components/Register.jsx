@@ -172,7 +172,7 @@ function Register({ onToggleTheme, mode }) {
           Create Account
         </Typography>
         <Typography variant="body1" color="text.secondary" gutterBottom>
-          Join the Public Census Management System
+          Join the Public Census App
         </Typography>
         {error && (
           <Alert severity="error" sx={{ mb: 2, width: '100%' }}>

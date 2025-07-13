@@ -1,6 +1,6 @@
 {
-  "short_name": "React Auth",
-  "name": "React Authentication App",
+  "short_name": "Census App",
+  "name": "Public Census Management System",
   "icons": [
     {
       "src": "favicon.ico",
