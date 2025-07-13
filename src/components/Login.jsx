@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -48,7 +48,7 @@ const LogoContainer = styled(Box)(({ theme }) => ({
 
 function Login({ onToggleTheme, mode }) {
   const navigate = useNavigate();
-  const { login, userRole } = useAuth();
+  const { login, userRole, currentUser } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -58,6 +58,17 @@ function Login({ onToggleTheme, mode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (currentUser && userRole) {
+      if (userRole === 'admin') {
+        navigate('/dashboard');
+      } else if (userRole === 'census-officer') {
+        navigate('/census-form');
+      }
+    }
+  }, [currentUser, userRole, navigate]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -66,6 +77,10 @@ function Login({ onToggleTheme, mode }) {
         ...prev,
         [name]: '',
       }));
+    }
+    // Clear general error when user starts typing
+    if (error) {
+      setError('');
     }
   };
 
@@ -91,8 +106,13 @@ function Login({ onToggleTheme, mode }) {
     setError('');
 
     try {
-      await login(formData.email, formData.password); // Only email & password
-      // Navigation handled by App component based on userRole
+      const { userRole: loginUserRole } = await login(formData.email, formData.password);
+      // Navigate based on user role after successful login
+      if (loginUserRole === 'admin') {
+        navigate('/dashboard');
+      } else if (loginUserRole === 'census-officer') {
+        navigate('/census-form');
+      }
     } catch (error) {
       console.error('Login error:', error);
       setError(error.message || 'Failed to login. Please check your credentials.');
@@ -117,10 +137,14 @@ function Login({ onToggleTheme, mode }) {
           Welcome Back
         </Typography>
         <Typography variant="body1" color="text.secondary" gutterBottom>
-          Kenyan Census Management System
+          Public Census Management System
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+          Sign in to access your dashboard
+        </Typography>
+        
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
             {error}
           </Alert>
         )}
@@ -180,6 +204,7 @@ function Login({ onToggleTheme, mode }) {
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
           </Button>
+          
           <Box sx={{ textAlign: 'center' }}>
             <Link component={RouterLink} to="/register" variant="body2">
               {"Don't have an account? Sign Up"}

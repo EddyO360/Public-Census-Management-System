@@ -67,6 +67,7 @@ function Register({ onToggleTheme, mode }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -84,30 +85,49 @@ function Register({ onToggleTheme, mode }) {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.firstName) {
+    
+    // First Name validation
+    if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters';
     }
-    if (!formData.lastName) {
+    
+    // Last Name validation
+    if (!formData.lastName.trim()) {
       newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'Last name must be at least 2 characters';
     }
+    
+    // Email validation
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = 'Please enter a valid email address';
     }
+    
+    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
+    
+    // Confirm Password validation
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
+    
+    // Role validation
     if (!formData.role) {
       newErrors.role = 'Role is required';
     }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -120,9 +140,14 @@ function Register({ onToggleTheme, mode }) {
     setError('');
 
     try {
-      const displayName = `${formData.firstName} ${formData.lastName}`;
+      const displayName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
       await signup(formData.email, formData.password, formData.role, displayName);
-      navigate('/login');
+      
+      // Show success message and redirect to login
+      setSuccessMessage('Account created successfully! Please sign in.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (error) {
       console.error('Registration error:', error);
       setError(error.message || 'Failed to create account. Please try again.');
@@ -147,11 +172,16 @@ function Register({ onToggleTheme, mode }) {
           Create Account
         </Typography>
         <Typography variant="body1" color="text.secondary" gutterBottom>
-          Join the Kenyan Census Management System
+          Join the Public Census Management System
         </Typography>
         {error && (
           <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
             {error}
+          </Alert>
+        )}
+        {successMessage && (
+          <Alert severity="success" sx={{ mb: 2, width: '100%' }}>
+            {successMessage}
           </Alert>
         )}
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, MenuItem, Select, FormControl, InputLabel, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Paper, MenuItem, Select, FormControl, InputLabel, CircularProgress, Alert, Button } from '@mui/material';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getCensusStatistics, getAllEnumerators } from '../services/censusService.jsx';
 
@@ -142,26 +142,31 @@ function Analytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [statsData, enumeratorsData] = await Promise.all([
-          getCensusStatistics(),
-          getAllEnumerators()
-        ]);
-        setStats(statsData);
-        setEnumerators(enumeratorsData);
-      } catch (error) {
-        console.error('Error loading analytics data:', error);
-        setError('Failed to load analytics data');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const [statsData, enumeratorsData] = await Promise.all([
+        getCensusStatistics(),
+        getAllEnumerators()
+      ]);
+      setStats(statsData);
+      setEnumerators(enumeratorsData);
+    } catch (error) {
+      console.error('Error loading analytics data:', error);
+      setError(error.message || 'Failed to load analytics data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, []);
+
+  const handleRetry = () => {
+    loadData();
+  };
 
   if (loading) {
     return (
@@ -174,8 +179,30 @@ function Analytics() {
   if (error) {
     return (
       <Box>
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert 
+          severity="error" 
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={handleRetry}>
+              Retry
+            </Button>
+          }
+        >
           {error}
+        </Alert>
+      </Box>
+    );
+  }
+
+  // Check if we have any data
+  if (!stats || stats.totalRecords === 0) {
+    return (
+      <Box>
+        <Typography variant="h4" gutterBottom>
+          Data Visualization
+        </Typography>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          No census data available yet. Data will appear here once census forms are submitted.
         </Alert>
       </Box>
     );

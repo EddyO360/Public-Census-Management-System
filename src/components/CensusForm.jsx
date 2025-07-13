@@ -139,7 +139,101 @@ function CensusForm({ onToggleTheme, mode }) {
 
   const validateForm = () => {
     const newErrors = {};
-    // Add validation logic here
+    
+    // Personal Information validation
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters';
+    }
+    
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'Last name must be at least 2 characters';
+    }
+    
+    if (!formData.idNumber.trim()) {
+      newErrors.idNumber = 'ID number is required';
+    } else if (!/^\d{8}$/.test(formData.idNumber.trim())) {
+      newErrors.idNumber = 'ID number must be 8 digits';
+    }
+    
+    if (!formData.dateOfBirth) {
+      newErrors.dateOfBirth = 'Date of birth is required';
+    } else {
+      const birthDate = new Date(formData.dateOfBirth);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      if (age < 0 || age > 120) {
+        newErrors.dateOfBirth = 'Please enter a valid date of birth';
+      }
+    }
+    
+    if (!formData.gender) {
+      newErrors.gender = 'Gender is required';
+    }
+    
+    if (!formData.maritalStatus) {
+      newErrors.maritalStatus = 'Marital status is required';
+    }
+    
+    // Location validation
+    if (!formData.county) {
+      newErrors.county = 'County is required';
+    }
+    
+    if (!formData.subCounty) {
+      newErrors.subCounty = 'Sub-county is required';
+    }
+    
+    if (!formData.ward) {
+      newErrors.ward = 'Ward is required';
+    }
+    
+    // Education and Employment validation
+    if (!formData.education) {
+      newErrors.education = 'Education level is required';
+    }
+    
+    if (!formData.employment) {
+      newErrors.employment = 'Employment status is required';
+    }
+    
+    if (formData.employment === 'employed' && !formData.occupation.trim()) {
+      newErrors.occupation = 'Occupation is required for employed individuals';
+    }
+    
+    // Household validation
+    if (!formData.householdSize || formData.householdSize < 1) {
+      newErrors.householdSize = 'Household size must be at least 1';
+    } else if (formData.householdSize > 20) {
+      newErrors.householdSize = 'Household size cannot exceed 20';
+    }
+    
+    // Disability validation
+    if (formData.hasDisability === 'yes' && !formData.disabilityType.trim()) {
+      newErrors.disabilityType = 'Disability type is required when disability is selected';
+    }
+    
+    // Household members validation
+    if (formData.householdMembers.length > 0) {
+      formData.householdMembers.forEach((member, index) => {
+        if (!member.name.trim()) {
+          newErrors[`householdMember${index}Name`] = 'Member name is required';
+        }
+        if (!member.age || member.age < 0 || member.age > 120) {
+          newErrors[`householdMember${index}Age`] = 'Valid age is required';
+        }
+        if (!member.gender) {
+          newErrors[`householdMember${index}Gender`] = 'Gender is required';
+        }
+        if (!member.relationship) {
+          newErrors[`householdMember${index}Relationship`] = 'Relationship is required';
+        }
+      });
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -149,6 +243,8 @@ function CensusForm({ onToggleTheme, mode }) {
     if (!validateForm()) return;
 
     setLoading(true);
+    setSuccessMessage('');
+    
     try {
       await saveCensusData(formData, currentUser.uid);
       setSuccessMessage('Census data submitted successfully!');
@@ -175,6 +271,18 @@ function CensusForm({ onToggleTheme, mode }) {
       setSelectedCounty(null);
       setSelectedSubCounty(null);
       setSelectedWard(null);
+      
+      // Reset household member form
+      setHouseholdMember({
+        name: '',
+        age: '',
+        gender: '',
+        relationship: '',
+        education: '',
+        occupation: '',
+        hasDisability: 'no',
+        disabilityType: '',
+      });
     } catch (error) {
       console.error('Error submitting census data:', error);
       setSuccessMessage('Error submitting data. Please try again.');
@@ -235,7 +343,7 @@ function CensusForm({ onToggleTheme, mode }) {
           Census Data Collection Form
         </Typography>
         <Typography variant="subtitle1" color="text.secondary" gutterBottom align="center">
-          Kenyan Census Management System
+          Public Census Management System
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>

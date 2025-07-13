@@ -9,22 +9,54 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  getDoc
+  getDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db, logAnalyticsEvent } from '../firebase';
 
 const CENSUS_COLLECTION = 'census_data';
 const ENUMERATORS_COLLECTION = 'enumerators';
 
+// Validate census data before saving
+const validateCensusData = (censusData) => {
+  const errors = [];
+  
+  if (!censusData.firstName?.trim()) errors.push('First name is required');
+  if (!censusData.lastName?.trim()) errors.push('Last name is required');
+  if (!censusData.idNumber?.trim()) errors.push('ID number is required');
+  if (!censusData.dateOfBirth) errors.push('Date of birth is required');
+  if (!censusData.gender) errors.push('Gender is required');
+  if (!censusData.maritalStatus) errors.push('Marital status is required');
+  if (!censusData.county) errors.push('County is required');
+  if (!censusData.subCounty) errors.push('Sub-county is required');
+  if (!censusData.ward) errors.push('Ward is required');
+  if (!censusData.education) errors.push('Education level is required');
+  if (!censusData.employment) errors.push('Employment status is required');
+  if (!censusData.householdSize || censusData.householdSize < 1) errors.push('Valid household size is required');
+  
+  if (errors.length > 0) {
+    throw new Error(`Validation failed: ${errors.join(', ')}`);
+  }
+  
+  return true;
+};
+
 // Save census form data
 export const saveCensusData = async (censusData, enumeratorId) => {
   try {
-    const docRef = await addDoc(collection(db, CENSUS_COLLECTION), {
+    // Validate data before saving
+    validateCensusData(censusData);
+    
+    // Prepare data for saving
+    const dataToSave = {
       ...censusData,
       enumeratorId,
-      submittedAt: new Date(),
-      status: 'submitted'
-    });
+      submittedAt: serverTimestamp(),
+      status: 'submitted',
+      lastUpdated: serverTimestamp()
+    };
+
+    const docRef = await addDoc(collection(db, CENSUS_COLLECTION), dataToSave);
 
     // Log analytics event
     logAnalyticsEvent('census_form_submitted', {
@@ -36,7 +68,17 @@ export const saveCensusData = async (censusData, enumeratorId) => {
     return docRef.id;
   } catch (error) {
     console.error('Error saving census data:', error);
-    throw error;
+    
+    // Provide user-friendly error messages
+    if (error.message.includes('Validation failed')) {
+      throw new Error(error.message);
+    } else if (error.code === 'permission-denied') {
+      throw new Error('You do not have permission to save census data. Please contact your administrator.');
+    } else if (error.code === 'unavailable') {
+      throw new Error('Service temporarily unavailable. Please try again later.');
+    } else {
+      throw new Error('Failed to save census data. Please try again.');
+    }
   }
 };
 
@@ -50,13 +92,24 @@ export const getAllCensusData = async () => {
     }));
   } catch (error) {
     console.error('Error getting census data:', error);
-    throw error;
+    
+    if (error.code === 'permission-denied') {
+      throw new Error('You do not have permission to view census data.');
+    } else if (error.code === 'unavailable') {
+      throw new Error('Service temporarily unavailable. Please try again later.');
+    } else {
+      throw new Error('Failed to load census data. Please try again.');
+    }
   }
 };
 
 // Get census data by enumerator
 export const getCensusDataByEnumerator = async (enumeratorId) => {
   try {
+    if (!enumeratorId) {
+      throw new Error('Enumerator ID is required');
+    }
+    
     const q = query(
       collection(db, CENSUS_COLLECTION),
       where('enumeratorId', '==', enumeratorId),
@@ -69,13 +122,24 @@ export const getCensusDataByEnumerator = async (enumeratorId) => {
     }));
   } catch (error) {
     console.error('Error getting enumerator census data:', error);
-    throw error;
+    
+    if (error.message.includes('Enumerator ID is required')) {
+      throw new Error(error.message);
+    } else if (error.code === 'permission-denied') {
+      throw new Error('You do not have permission to view this data.');
+    } else {
+      throw new Error('Failed to load enumerator data. Please try again.');
+    }
   }
 };
 
 // Get census data by county
 export const getCensusDataByCounty = async (county) => {
   try {
+    if (!county) {
+      throw new Error('County is required');
+    }
+    
     const q = query(
       collection(db, CENSUS_COLLECTION),
       where('county', '==', county)
@@ -87,7 +151,12 @@ export const getCensusDataByCounty = async (county) => {
     }));
   } catch (error) {
     console.error('Error getting county census data:', error);
-    throw error;
+    
+    if (error.message.includes('County is required')) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('Failed to load county data. Please try again.');
+    }
   }
 };
 
@@ -154,18 +223,29 @@ export const getCensusStatistics = async () => {
     return stats;
   } catch (error) {
     console.error('Error getting census statistics:', error);
-    throw error;
+    throw new Error('Failed to load statistics. Please try again.');
   }
 };
 
 // Enumerator management
 export const saveEnumerator = async (enumeratorData) => {
   try {
-    const docRef = await addDoc(collection(db, ENUMERATORS_COLLECTION), {
+    // Basic validation
+    if (!enumeratorData.displayName?.trim()) {
+      throw new Error('Display name is required');
+    }
+    if (!enumeratorData.county) {
+      throw new Error('County is required');
+    }
+    
+    const dataToSave = {
       ...enumeratorData,
-      createdAt: new Date(),
-      isActive: true
-    });
+      createdAt: serverTimestamp(),
+      isActive: true,
+      lastUpdated: serverTimestamp()
+    };
+
+    const docRef = await addDoc(collection(db, ENUMERATORS_COLLECTION), dataToSave);
 
     logAnalyticsEvent('enumerator_registered', {
       county: enumeratorData.county,
@@ -175,7 +255,12 @@ export const saveEnumerator = async (enumeratorData) => {
     return docRef.id;
   } catch (error) {
     console.error('Error saving enumerator:', error);
-    throw error;
+    
+    if (error.message.includes('is required')) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('Failed to save enumerator data. Please try again.');
+    }
   }
 };
 
@@ -188,12 +273,16 @@ export const getAllEnumerators = async () => {
     }));
   } catch (error) {
     console.error('Error getting enumerators:', error);
-    throw error;
+    throw new Error('Failed to load enumerators. Please try again.');
   }
 };
 
 export const getEnumeratorById = async (enumeratorId) => {
   try {
+    if (!enumeratorId) {
+      throw new Error('Enumerator ID is required');
+    }
+    
     const docRef = doc(db, ENUMERATORS_COLLECTION, enumeratorId);
     const docSnap = await getDoc(docRef);
     
@@ -207,16 +296,25 @@ export const getEnumeratorById = async (enumeratorId) => {
     }
   } catch (error) {
     console.error('Error getting enumerator:', error);
-    throw error;
+    
+    if (error.message.includes('Enumerator ID is required')) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('Failed to load enumerator data. Please try again.');
+    }
   }
 };
 
 export const updateEnumerator = async (enumeratorId, updateData) => {
   try {
+    if (!enumeratorId) {
+      throw new Error('Enumerator ID is required');
+    }
+    
     const docRef = doc(db, ENUMERATORS_COLLECTION, enumeratorId);
     await updateDoc(docRef, {
       ...updateData,
-      updatedAt: new Date()
+      lastUpdated: serverTimestamp()
     });
 
     logAnalyticsEvent('enumerator_updated', {
@@ -224,12 +322,23 @@ export const updateEnumerator = async (enumeratorId, updateData) => {
     });
   } catch (error) {
     console.error('Error updating enumerator:', error);
-    throw error;
+    
+    if (error.message.includes('Enumerator ID is required')) {
+      throw new Error(error.message);
+    } else if (error.code === 'not-found') {
+      throw new Error('Enumerator not found.');
+    } else {
+      throw new Error('Failed to update enumerator. Please try again.');
+    }
   }
 };
 
 export const deleteEnumerator = async (enumeratorId) => {
   try {
+    if (!enumeratorId) {
+      throw new Error('Enumerator ID is required');
+    }
+    
     await deleteDoc(doc(db, ENUMERATORS_COLLECTION, enumeratorId));
     
     logAnalyticsEvent('enumerator_deleted', {
@@ -237,6 +346,13 @@ export const deleteEnumerator = async (enumeratorId) => {
     });
   } catch (error) {
     console.error('Error deleting enumerator:', error);
-    throw error;
+    
+    if (error.message.includes('Enumerator ID is required')) {
+      throw new Error(error.message);
+    } else if (error.code === 'not-found') {
+      throw new Error('Enumerator not found.');
+    } else {
+      throw new Error('Failed to delete enumerator. Please try again.');
+    }
   }
 }; 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider, createTheme, CssBaseline, Alert, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import Login from './components/Login.jsx';
@@ -20,9 +20,42 @@ const AppContainer = styled('div')({
   minHeight: '100vh',
 });
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('App Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Something went wrong. Please refresh the page and try again.
+          </Alert>
+          <button onClick={() => window.location.reload()}>
+            Refresh Page
+          </button>
+        </Box>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function AppContent() {
   const [mode, setMode] = useState('light');
-  const { currentUser, userRole, logout } = useAuth();
+  const { currentUser, userRole, loading, logout } = useAuth();
 
   const theme = useMemo(
     () =>
@@ -82,12 +115,27 @@ function AppContent() {
     setMode(prevMode => (prevMode === 'light' ? 'dark' : 'light'));
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
-  console.log('currentUser:', currentUser);
-  console.log('userRole:', userRole);
+  // Show loading spinner while authentication is being checked
+  if (loading) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AppContainer>
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+            <div>Loading...</div>
+          </Box>
+        </AppContainer>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -95,6 +143,7 @@ function AppContent() {
       <AppContainer>
         <Router>
           <Routes>
+            {/* Public Routes */}
             <Route path="/login" element={<Login onToggleTheme={toggleTheme} mode={mode} />} />
             <Route path="/register" element={<Register onToggleTheme={toggleTheme} mode={mode} />} />
 
@@ -104,10 +153,10 @@ function AppContent() {
               element={
                 currentUser && userRole === 'admin' ? (
                   <DashboardLayout onLogout={handleLogout}>
-                    <AdminDashboard onToggleTheme={toggleTheme} mode={mode} />
+                    <AdminDashboard onToggleTheme={toggleTheme} mode={mode} onLogout={handleLogout} />
                   </DashboardLayout>
                 ) : (
-                  <Navigate to="/login" />
+                  <Navigate to="/login" replace />
                 )
               }
             />
@@ -119,7 +168,7 @@ function AppContent() {
                     <Analytics />
                   </DashboardLayout>
                 ) : (
-                  <Navigate to="/login" />
+                  <Navigate to="/login" replace />
                 )
               }
             />
@@ -131,7 +180,7 @@ function AppContent() {
                     <Reports />
                   </DashboardLayout>
                 ) : (
-                  <Navigate to="/login" />
+                  <Navigate to="/login" replace />
                 )
               }
             />
@@ -143,7 +192,7 @@ function AppContent() {
                     <CensusOfficers />
                   </DashboardLayout>
                 ) : (
-                  <Navigate to="/login" />
+                  <Navigate to="/login" replace />
                 )
               }
             />
@@ -155,7 +204,7 @@ function AppContent() {
                     <Settings />
                   </DashboardLayout>
                 ) : (
-                  <Navigate to="/login" />
+                  <Navigate to="/login" replace />
                 )
               }
             />
@@ -164,14 +213,16 @@ function AppContent() {
             <Route
               path="/census-form"
               element={
-                currentUser && userRole === 'admin' ? (
-                  <DashboardLayout onLogout={handleLogout}>
+                currentUser && (userRole === 'admin' || userRole === 'census-officer') ? (
+                  userRole === 'admin' ? (
+                    <DashboardLayout onLogout={handleLogout}>
+                      <CensusForm onToggleTheme={toggleTheme} mode={mode} />
+                    </DashboardLayout>
+                  ) : (
                     <CensusForm onToggleTheme={toggleTheme} mode={mode} />
-                  </DashboardLayout>
-                ) : currentUser && userRole === 'census-officer' ? (
-                  <CensusForm onToggleTheme={toggleTheme} mode={mode} />
+                  )
                 ) : (
-                  <Navigate to="/login" />
+                  <Navigate to="/login" replace />
                 )
               }
             />
@@ -179,7 +230,17 @@ function AppContent() {
             {/* Default redirect based on role */}
             <Route
               path="*"
-              element={<Navigate to={!currentUser ? '/login' : userRole === 'admin' ? '/dashboard' : '/census-form'} />}
+              element={
+                !currentUser ? (
+                  <Navigate to="/login" replace />
+                ) : userRole === 'admin' ? (
+                  <Navigate to="/dashboard" replace />
+                ) : userRole === 'census-officer' ? (
+                  <Navigate to="/census-form" replace />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
             />
           </Routes>
         </Router>
@@ -190,9 +251,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
