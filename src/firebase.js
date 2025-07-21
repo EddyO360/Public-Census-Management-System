@@ -6,7 +6,7 @@ import { getAnalytics, logEvent } from 'firebase/analytics';
 // Your Firebase configuration
 // Replace these with your actual Firebase project configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAAGK_8x2lozqUW3JAvhC_uyZx9xtz2lGE",
+  apiKey: "AIzaSyAAGK_8x2lozqUW3JAvhC_uyZx9xtz2lG",
   authDomain: "censusproject-19593.firebaseapp.com",
   projectId: "censusproject-19593",
   storageBucket: "censusproject-19593.firebasestorage.app",
